@@ -26,18 +26,26 @@ export default function KeynoteCompanion() {
 
   // ─── Черга зображень ──────────────────────────────────────────────────────
   const imageQueueRef = useRef<string[]>([]);
+  const isShowingRef = useRef(false); // ref для синхронної перевірки (не батчиться React-ом)
 
   const enqueueImage = (url: string) => {
-    setCurrentImage(prev => {
-      if (!prev) return url;          // екран вільний — показуємо одразу
-      imageQueueRef.current.push(url); // зайнятий — кладемо в чергу
-      return prev;
-    });
+    if (!isShowingRef.current) {
+      isShowingRef.current = true; // миттєво — до наступного рендеру
+      setCurrentImage(url);
+    } else {
+      imageQueueRef.current.push(url);
+    }
   };
 
   const closeImage = () => {
     const next = imageQueueRef.current.shift() ?? null;
-    setCurrentImage(next);
+    if (next) {
+      setCurrentImage(null);
+      setTimeout(() => setCurrentImage(next), 1000); // 1 секунда паузи
+    } else {
+      isShowingRef.current = false;
+      setCurrentImage(null);
+    }
   };
   // ─────────────────────────────────────────────────────────────────────────
 
