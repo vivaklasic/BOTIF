@@ -8,11 +8,11 @@ import { useAgent, useUser } from '@/lib/state';
 const IMAGE_TRIGGERS: { keyword: string; url: string }[] = [
   {
     keyword: 'ліквідні земельні ділянки та будівлі',
-    url: 'https://i.ibb.co/zhvqcRj2/Etthics1picture.png',
+    url: 'https://res.cloudinary.com/dfasvauom/image/upload/v1773421817/bot1NP_bgbncz.jpg',
   },
   {
     keyword: 'дбають про своє майбутнє',
-    url: 'https://i.ibb.co/nswSZXv5/Etthics3picture.png',
+    url: 'https://res.cloudinary.com/dfasvauom/image/upload/v1773422142/bot2NP_lwetga.jpg',
   },
 ];
 
@@ -23,6 +23,23 @@ export default function KeynoteCompanion() {
   const { current } = useAgent();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
+
+  // ─── Черга зображень ──────────────────────────────────────────────────────
+  const imageQueueRef = useRef<string[]>([]);
+
+  const enqueueImage = (url: string) => {
+    setCurrentImage(prev => {
+      if (!prev) return url;          // екран вільний — показуємо одразу
+      imageQueueRef.current.push(url); // зайнятий — кладемо в чергу
+      return prev;
+    });
+  };
+
+  const closeImage = () => {
+    const next = imageQueueRef.current.shift() ?? null;
+    setCurrentImage(next);
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   // ─── Refs для fallback (не сбрасываются при реконнекте) ───────────────────
   const textBufferRef = useRef('');
@@ -107,13 +124,13 @@ export default function KeynoteCompanion() {
               pendingCheckRef.current = null;
             }
 
-            setCurrentImage(imageUrl);
-            console.log('✅ Image state updated');
+            enqueueImage(imageUrl); // ← ЗМІНЕНО: черга замість setCurrentImage
+            console.log('✅ Image enqueued');
             return {
               name: fc.name,
               id: fc.id,
               response: {
-                result: { success: true, message: `Image displayed: ${imageUrl}` },
+                result: { success: true, message: `Image queued: ${imageUrl}` },
               },
             };
           }
@@ -141,7 +158,7 @@ export default function KeynoteCompanion() {
             if (!shownRef.current.has(trigger.url)) {
               console.warn('⚠️ Fallback: модель не вызвала show_image, показываем сами:', trigger.url);
               shownRef.current.add(trigger.url);
-              setCurrentImage(trigger.url);
+              enqueueImage(trigger.url); // ← ЗМІНЕНО: черга замість setCurrentImage
               client.send([{
                 text: `[SYSTEM ERROR]: You forgot to call show_image("${trigger.url}"). The image has been displayed automatically. Please continue.`,
               }]);
@@ -203,7 +220,7 @@ export default function KeynoteCompanion() {
               }}
             />
             <button
-              onClick={() => setCurrentImage(null)}
+              onClick={closeImage} // ← ЗМІНЕНО: закриває і показує наступне з черги
               style={{
                 position: 'absolute',
                 top: '12px',
