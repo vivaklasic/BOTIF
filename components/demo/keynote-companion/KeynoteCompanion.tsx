@@ -7,7 +7,7 @@ import { useAgent, useUser } from '@/lib/state';
 
 const IMAGE_TRIGGERS: { keyword: string; url: string }[] = [
   {
-    keyword: 'дуже ліквідні земельні ділянки та будівлі',
+    keyword: 'ліквідні земельні ділянки та будівлі',
     url: 'https://i.ibb.co/zhvqcRj2/Etthics1picture.png',
   },
   {
