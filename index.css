@@ -996,49 +996,46 @@ input[type='range'] {
 }
 
 @media (max-width: 768px), (max-height: 500px) {
-  
-  
+
   .streaming-console {
     overflow: hidden;
   }
+
   .main-app-area {
     padding-bottom: 80px;
-    
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
   }
+
   body {
     background-image: url('https://res.cloudinary.com/dfasvauom/image/upload/v1773421318/botmo_he18dl.jpg'); 
     background-attachment: scroll; 
   }
 
- 
   .control-tray {
     width: 100%;
     left: 50%;
-    transform: translateX(-50%) scale(0.9);
+    transform: translateX(-50%) scale(0.8); /* уменьшили для мобильных */
     bottom: calc(15px + env(safe-area-inset-bottom));
-    padding-bottom: 20px;  
+    padding-bottom: 12px; /* меньше отступ */
+    gap: 6px; /* уменьшаем промежутки между кнопками */
   }
 
-  
+  .control-tray .connection-container .connection-button-container {
+    padding: 6px; /* уменьшили кнопки */
+    border-radius: 20px;
+  }
+
+  .control-tray .connection-container .text-indicator {
+    font-size: 9px; /* уменьшили текст */
+  }
+
   .basic-face {
     width: 90%;
-    max-width: 65vh;
-    max-height: 65vh;
+    max-width: 55vh; /* уменьшили лицо бота */
+    max-height: 55vh;
     aspect-ratio: 1 / 1;
-  }
-}
-
-@media (max-height: 700px) {
-  .basic-face {
-    max-width: 60vh;
-    max-height: 60vh;
-  }
-
-  .control-tray {
-    transform: translateX(-50%) scale(0.85);
   }
 }
