@@ -1023,9 +1023,12 @@ input[type='range'] {
     gap: 6px; /* уменьшаем промежутки между кнопками */
   }
 
+  .control-tray .action-button,
+  .control-tray .disabled .action-button,
   .control-tray .connection-container .connection-button-container {
-    padding: 6px; /* уменьшили кнопки */
-    border-radius: 20px;
+    padding: 4px 6px; /* меньше внутреннего пространства */
+    font-size: 9px;   /* уменьшаем текст */
+    border-radius: 16px; /* меньше скругление */
   }
 
   .control-tray .connection-container .text-indicator {
