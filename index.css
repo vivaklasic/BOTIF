@@ -1050,8 +1050,8 @@ input[type='range'] {
 
   .basic-face {
     width: 90%;
-    max-width: 65vh;
-    max-height: 65vh;
+    max-width: 75vh;
+    max-height: 75vh;
     aspect-ratio: 1 / 1;
   }
 }
