@@ -1017,27 +1017,40 @@ input[type='range'] {
   .control-tray {
     width: 100%;
     left: 50%;
-    transform: translateX(-50%) scale(0.8); /* уменьшили для мобильных */
+    transform: translateX(-50%) scale(0.8);
     bottom: calc(15px + env(safe-area-inset-bottom));
-    padding-bottom: 12px; /* меньше отступ */
-    gap: 6px; /* уменьшаем промежутки между кнопками */
+    padding-bottom: 12px;
+    gap: 6px;
   }
 
   .control-tray .action-button,
   .control-tray .disabled .action-button,
   .control-tray .connection-container .connection-button-container {
-    padding: 4px 6px; /* меньше внутреннего пространства */
-    font-size: 9px;   /* уменьшаем текст */
-    border-radius: 16px; /* меньше скругление */
+    padding: 4px 6px;
+    font-size: 9px;
+    border-radius: 16px;
+  }
+
+  .control-tray .mic-button {
+    padding: 4px 6px;
+    font-size: 9px;
+    border-radius: 16px;
+    width: auto;
+    height: auto;
+  }
+
+  .control-tray .mic-button svg {
+    width: 16px;
+    height: 16px;
   }
 
   .control-tray .connection-container .text-indicator {
-    font-size: 9px; /* уменьшили текст */
+    font-size: 9px;
   }
 
   .basic-face {
     width: 90%;
-    max-width: 55vh; /* уменьшили лицо бота */
+    max-width: 55vh;
     max-height: 55vh;
     aspect-ratio: 1 / 1;
   }
