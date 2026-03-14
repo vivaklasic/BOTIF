@@ -1031,3 +1031,14 @@ input[type='range'] {
     aspect-ratio: 1 / 1;
   }
 }
+
+@media (max-height: 700px) {
+  .basic-face {
+    max-width: 60vh;
+    max-height: 60vh;
+  }
+
+  .control-tray {
+    transform: translateX(-50%) scale(0.85);
+  }
+}
