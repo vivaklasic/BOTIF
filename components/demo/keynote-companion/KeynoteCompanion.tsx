@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Modality } from '@google/genai';
 import BasicFace from '../basic-face/BasicFace';
 import { useLiveAPIContext } from '../../../contexts/LiveAPIContext';
@@ -16,6 +16,8 @@ const IMAGE_TRIGGERS: { keyword: string; url: string }[] = [
   },
 ];
 
+const AUTO_CLOSE_MS = 7000; // автозакрытие через 7 секунд
+
 export default function KeynoteCompanion() {
   const { client, connected, setConfig } = useLiveAPIContext();
   const faceCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,31 +28,62 @@ export default function KeynoteCompanion() {
 
   // ─── Черга зображень ──────────────────────────────────────────────────────
   const imageQueueRef = useRef<string[]>([]);
-  const isShowingRef = useRef(false); // ref для синхронної перевірки (не батчиться React-ом)
+  const isShowingRef = useRef(false);
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const enqueueImage = (url: string) => {
-    if (!isShowingRef.current) {
-      isShowingRef.current = true; // миттєво — до наступного рендеру
-      setCurrentImage(url);
-    } else {
-      imageQueueRef.current.push(url);
+  // Колбек для розблокування моделі після закриття картинки
+  const onImageClosedRef = useRef<(() => void) | null>(null);
+
+  const clearAutoCloseTimer = () => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
     }
   };
 
-  const closeImage = () => {
+  const showImage = useCallback((url: string) => {
+    isShowingRef.current = true;
+    setCurrentImage(url);
+    console.log('🖼️ Showing image:', url);
+
+    // Автозакрытие через 7 секунд
+    clearAutoCloseTimer();
+    autoCloseTimerRef.current = setTimeout(() => {
+      console.log('⏱️ Auto-closing image after 7s');
+      closeImage();
+    }, AUTO_CLOSE_MS);
+  }, []);
+
+  const closeImage = useCallback(() => {
+    clearAutoCloseTimer();
+
     const next = imageQueueRef.current.shift() ?? null;
+
+    // Разблокируем модель — она может продолжать говорить
+    if (onImageClosedRef.current) {
+      onImageClosedRef.current();
+      onImageClosedRef.current = null;
+    }
+
     if (next) {
       setCurrentImage(null);
-      setTimeout(() => setCurrentImage(next), 1000); // 1 секунда паузи
+      setTimeout(() => showImage(next), 1000); // 1 сек пауза между картинками
     } else {
       isShowingRef.current = false;
       setCurrentImage(null);
     }
-  };
-  // ─────────────────────────────────────────────────────────────────────────
+  }, [showImage]);
 
-  // ─── Refs для fallback (не сбрасываются при реконнекте) ───────────────────
-  const textBufferRef = useRef('');
+  const enqueueImage = useCallback((url: string) => {
+    if (!isShowingRef.current) {
+      showImage(url);
+    } else {
+      imageQueueRef.current.push(url);
+      console.log('📋 Image queued:', url, '| Queue length:', imageQueueRef.current.length);
+    }
+  }, [showImage]);
+
+  // ─── Refs для fallback ────────────────────────────────────────────────────
   const shownRef = useRef(new Set<string>());
   const pendingCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -59,8 +92,6 @@ export default function KeynoteCompanion() {
     if (faceCanvasRef.current) {
       console.log('🟢 Canvas инициализирован:', faceCanvasRef.current);
       setCanvasReady(true);
-    } else {
-      console.warn('⚠️ Canvas ref пока пустой!');
     }
   }, [faceCanvasRef.current]);
 
@@ -80,7 +111,7 @@ export default function KeynoteCompanion() {
             functionDeclarations: [
               {
                 name: 'show_image',
-                description: 'Display image on screen (modal overlay).',
+                description: 'Display image on screen (modal overlay). Wait for the tool response before continuing speech — the response confirms the user has seen the image.',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
@@ -97,7 +128,7 @@ export default function KeynoteCompanion() {
     setupConfig();
   }, [setConfig, user, current]);
 
-  // ─── Обработка toolcall (оригинальный) + fallback ─────────────────────────
+  // ─── Обработка toolcall + молчание бота ───────────────────────────────────
   useEffect(() => {
     if (!client || !connected) {
       console.log('⚠️ Client or connection not ready:', { client: !!client, connected });
@@ -125,23 +156,31 @@ export default function KeynoteCompanion() {
               };
             }
 
-            // Помечаем как показанное и отменяем pending fallback
             shownRef.current.add(imageUrl);
             if (pendingCheckRef.current) {
               clearTimeout(pendingCheckRef.current);
               pendingCheckRef.current = null;
             }
 
-            enqueueImage(imageUrl); // ← ЗМІНЕНО: черга замість setCurrentImage
+            enqueueImage(imageUrl);
             console.log('✅ Image enqueued');
-            return {
-              name: fc.name,
-              id: fc.id,
-              response: {
-                result: { success: true, message: `Image queued: ${imageUrl}` },
-              },
-            };
+
+            // ─── Блокируем модель до закрытия картинки ────────────────────
+            // Модель молчит пока пользователь не закроет (или 7 сек)
+            return new Promise<any>((resolve) => {
+              onImageClosedRef.current = () => {
+                console.log('🔓 Image closed — unblocking model');
+                resolve({
+                  name: fc.name,
+                  id: fc.id,
+                  response: {
+                    result: { success: true, message: 'Image was shown and closed by user.' },
+                  },
+                });
+              };
+            });
           }
+
           return null;
         })
       );
@@ -150,46 +189,19 @@ export default function KeynoteCompanion() {
       client.sendToolResponse({ functionResponses: validResponses });
     };
 
-    // ─── Fallback: ловим текст и проверяем вызов ──────────────────────────
-    const handleContent = (content: any) => {
-      const parts = content?.modelTurn?.parts ?? [];
-      for (const part of parts) {
-        if (!part.text) continue;
-        textBufferRef.current += ' ' + part.text;
-
-        for (const trigger of IMAGE_TRIGGERS) {
-          if (shownRef.current.has(trigger.url)) continue;
-          if (!textBufferRef.current.toLowerCase().includes(trigger.keyword.toLowerCase())) continue;
-
-          if (pendingCheckRef.current) clearTimeout(pendingCheckRef.current);
-          pendingCheckRef.current = setTimeout(() => {
-            if (!shownRef.current.has(trigger.url)) {
-              console.warn('⚠️ Fallback: модель не вызвала show_image, показываем сами:', trigger.url);
-              shownRef.current.add(trigger.url);
-              enqueueImage(trigger.url); // ← ЗМІНЕНО: черга замість setCurrentImage
-              client.send([{
-                text: `[SYSTEM ERROR]: You forgot to call show_image("${trigger.url}"). The image has been displayed automatically. Please continue.`,
-              }]);
-            }
-          }, 800);
-        }
-      }
-    };
-
     const handleTurnEnd = () => {
-      textBufferRef.current = '';
+      // textBuffer не используется (AUDIO mode), оставляем для совместимости
     };
 
     client.on('toolcall', handleToolCall);
-    client.on('content', handleContent);
     client.on('turncomplete', handleTurnEnd);
     return () => {
       client.off('toolcall', handleToolCall);
-      client.off('content', handleContent);
       client.off('turncomplete', handleTurnEnd);
       if (pendingCheckRef.current) clearTimeout(pendingCheckRef.current);
+      clearAutoCloseTimer();
     };
-  }, [client, connected]);
+  }, [client, connected, enqueueImage]);
 
   // Лог смены изображения
   useEffect(() => {
@@ -228,7 +240,7 @@ export default function KeynoteCompanion() {
               }}
             />
             <button
-              onClick={closeImage} // ← ЗМІНЕНО: закриває і показує наступне з черги
+              onClick={closeImage}
               style={{
                 position: 'absolute',
                 top: '12px',
