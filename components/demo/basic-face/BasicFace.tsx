@@ -52,7 +52,7 @@ export default function BasicFace({
 
   useEffect(() => {
     function calculateScale() {
-      setScale(Math.min(window.innerWidth, window.innerHeight) / 1000);
+      setScale(Math.min(window.innerWidth, window.innerHeight) / 600);
     }
     window.addEventListener('resize', calculateScale);
     calculateScale();
