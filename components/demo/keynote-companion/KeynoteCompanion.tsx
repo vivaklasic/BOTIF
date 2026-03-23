@@ -241,7 +241,7 @@ const showImage = (url: string) => {
                 position: 'absolute',
                 top: '12px',
                 right: '12px',
-                background: 'rgba(0,0,0,0.30)',
+                background: 'rgba(45, 135, 18, 0.20)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '50%',
