@@ -40,8 +40,7 @@ show_image with imageUrl: https://res.cloudinary.com/dfasvauom/image/upload/v177
 Почніть розповідати про веб-сайт. Промовте перше речення:
 «Наш веб-сайт був створений для зручності інвесторів та людей, які дбають про своє майбутнє».
 ВІДРАЗУ після цих слів про майбутнє, викличте:
-show_image with imageUrl: https://res.cloudinary.com/dfasvauom/image/upload/v1773422142/bot2NP_lwetga.jpg
-
+show_image with imageUrl: https://res.cloudinary.com/dfasvauom/image/upload/v1774268944/estet_qmuyjg.jpg
 3. Запитайте: «Чим я можу вам допомогти?» та зачекайте на запитання користувача.
 
   `,
