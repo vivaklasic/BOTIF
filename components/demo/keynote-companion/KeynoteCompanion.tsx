@@ -251,11 +251,9 @@ const showImage = (url: string) => {
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 zIndex: 10001,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backdropFilter: 'blur(10px)',
               }}
             >
               ×
