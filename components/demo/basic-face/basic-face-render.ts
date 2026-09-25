@@ -39,7 +39,7 @@ export function renderBasicFace(props: BasicFaceProps) {
   // Draw the background circle
   ctx.fillStyle = color || 'white';
   ctx.beginPath();
-  ctx.arc(width / 2, height / 2, width / 2 - 20, 0, Math.PI * 2);
+  ctx.arc(width / 2, height / 2, width / 2 - 40, 0, Math.PI * 2);
   ctx.fill();
 
   const eyesCenter = [width / 2, height / 2.425];
